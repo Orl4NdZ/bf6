@@ -193,7 +193,8 @@ export async function OnPlayerDeployed(player: mod.Player) {
     equipWeaponForTier(player, tier);
     updateScoreboard(player);
 
-    if (tier === 17) mod.ForceSwitchInventory(player, mod.InventorySlots.GadgetOne);
+    if (tier === 17) {
+       mod.ForceSwitchInventory(player, mod.InventorySlots.GadgetOne);}
 }
 
 // ---- Kill / death handling ----
@@ -361,3 +362,4 @@ function updateScoreboard(player: mod.Player): void {
     const tier = getTier(player);
     mod.SetScoreboardPlayerValues(player, tier + 1, tier);
 }
+
