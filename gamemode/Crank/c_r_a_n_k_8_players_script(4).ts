@@ -497,6 +497,11 @@ export async function OnPlayerEarnedKill(killer: mod.Player, victim: mod.Player)
                 }
                 break;
         }
+        const totalKills = getPLayerKills(player);
+        if (totalKills >= 50) {
+        PlayWinEffect(player);    
+        handlePlayerVictory(player);
+        }
 
         updateScoreboard(victim);
     }
