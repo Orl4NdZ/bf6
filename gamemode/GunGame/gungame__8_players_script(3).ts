@@ -12,20 +12,14 @@ const playerLastTierOnSpawn: { [playerId: number]: number } = {};
 const playerLastKills: { [playerId: number]: number } = {};
 const playerLastKillTime: { [playerId: number]: number } = {};
 
-export function EventRingOfFire() {
-   
+let smokeVFX: mod.VFX;
 
-    const ring: mod.RingOfFire = mod.GetRingOfFire(1337);
-    if (ring) {
-        mod.RingOfFireStart(ring);
-        
-        
-        
-    } else {
-        console.log("RingOfFire with id 1337 not found");
-    }
+export function SpawnSmokeColumn() {
+    const pos = mod.CreateVector(61.628, 70.255, -28.681);
+    const rot = mod.CreateVector(0, 0, 0);
+    smokeVFX = mod.SpawnObject(mod.RuntimeSpawn_Common.FX_Vehicle_Wreck_PTV, pos, rot);
+    mod.EnableVFX(smokeVFX, true);
 }
-
 
 let activeWeaponList: mod.Weapons[] = [];
 
@@ -159,7 +153,8 @@ export async function OnGameModeStarted() {
     mod.SetScoreboardColumnNames(mod.Message("Tier"), mod.Message("Kills"));
     mod.SetScoreboardColumnWidths(1, 2);
     mod.SetScoreboardSorting(1, false);
-    EventRingOfFire();
+   SpawnSmokeColumn();
+    
 }
 
 // ---- Player join / spawn ----
@@ -362,4 +357,5 @@ function updateScoreboard(player: mod.Player): void {
     const tier = getTier(player);
     mod.SetScoreboardPlayerValues(player, tier + 1, tier);
 }
+
 
