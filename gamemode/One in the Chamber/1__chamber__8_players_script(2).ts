@@ -7,20 +7,39 @@ const INITIAL_THROWABLES = 3; // Renamed BRUV for clarity
 const INITIAL_LIVES = 3;
 
 
-export function EventRingOfFire() {
-   
+function assignPlayersToUniqueTeams() {
+    // Assign every valid player to a unique team by iterating the engine player array correctly.
+    const allPlayersArray = mod.AllPlayers(); // engine collection
+    const count = mod.CountOf(allPlayersArray);
+    let teamIndex = 1;
 
-    const ring: mod.RingOfFire = mod.GetRingOfFire(1337);
-    if (ring) {
-        mod.RingOfFireStart(ring);
-        
-        
-        
-    } else {
-        console.log("RingOfFire with id 1337 not found");
+    for (let i = 0; i < count; i++) {
+        const p = mod.ValueInArray(allPlayersArray, i);
+        if (!mod.IsPlayerValid(p)) continue;
+
+        // Protect against excessively large teamIndex by clamping if necessary.
+        // (If map provides fewer teams, teams will still be sequentially assigned; adjust as needed.)
+        const team = mod.GetTeam(teamIndex);
+        mod.SetTeam(p, team);
+        teamIndex++;
     }
 }
+function resetPlayerTeams() {
+    // single pass team assignment (no nested loops)
+    assignPlayersToUniqueTeams();
+}
 
+
+
+export async function OnRoundEnded() {
+    resetPlayerTeams();
+    const players = mod.AllPlayers();
+    const n = mod.CountOf(players);
+    for (let i = 0; i < n; i++) {
+        const p = mod.ValueInArray(players, i);
+        if (mod.IsPlayerValid(p)) updateScoreboard(p);
+    }
+}
 
 
 
@@ -109,7 +128,7 @@ class SimpleCounterUI {
             type: "Text",
             parent: this.rootWidget,
             textSize: 36,
-            textColor: [0, 0.6, 0],
+            textColor: [1, 1, 1],
             position: [0, 0, 0],
             size: [this.width, 50],
             anchor: mod.UIAnchor.Center,
@@ -131,17 +150,20 @@ class SimpleCounterUI {
 // ============================================================================
 
 export async function OnGameModeStarted() {
+    
     mod.SetGameModeTargetScore(TARGET_KILLS);
     mod.SetSpawnMode(mod.SpawnModes.AutoSpawn);
 
-    mod.DisplayHighlightedWorldLogMessage(mod.Message("You've got 3 lives, use them well!"));
+    
     mod.SetScoreboardType(mod.ScoreboardType.CustomFFA);
     mod.SetScoreboardHeader(mod.Message("ONE IN THE CHAMBER"));
+    mod.DisplayHighlightedWorldLogMessage(mod.Message("You've got 3 lives, use them well!"));
     mod.SetScoreboardColumnNames(mod.Message("Kills"), mod.Message("Lives"));
     mod.SetScoreboardColumnWidths(1, 1);
     mod.SetScoreboardSorting(1, true);
     SpawnSmokeColumn();
-    EventRingOfFire();
+    resetPlayerTeams();
+    
 }
 
 // ============================================================================
@@ -152,6 +174,7 @@ export async function OnPlayerJoinGame(player: mod.Player) {
     if (!mod.IsPlayerValid(player)) return;
     const playerId = getPlayerId(player);
      playerHandles[playerId] = player; 
+    assignPlayersToUniqueTeams();
 
     // Initialize kill count and scoreboard baseline
     playerKillsCount[playerId] = 0;
@@ -173,11 +196,7 @@ export async function OnPlayerJoinGame(player: mod.Player) {
     playerUIs[playerId] = ui;
     ui.show();
 
-    mod.DisplayNotificationMessage(
-        mod.Message("One in The Chamber."),
-        player
-    );
-
+    
     updateScoreboard(player);
 }
 
@@ -321,16 +340,23 @@ export async function OnPlayerDied(
         }
         mod.DisplayNotificationMessage(mod.Message("You are eliminated."), victim);
         mod.EnablePlayerDeploy(victim, false);
-       
-        
-        await mod.Wait(0.2);
-        if (mod.IsPlayerValid(killer)) {
-        mod.SetTeam(victim, mod.GetTeam(killer));    
-        mod.SetSpawnMode(mod.SpawnModes.Spectating);
-
-        }
-        
+         mod.SetRedeployTime(victim, 999999);
         updateScoreboard(victim);
+        
+ if (mod.IsPlayerValid(victim)) {
+        // Move to killer's team to enable auto-spectate
+        if (mod.IsPlayerValid(killer)) {
+            const killerTeam = mod.GetTeam(killer);
+            mod.SetTeam(victim, killerTeam);}
+
+        // Switch to spectator mode (no respawn)
+        mod.SetSpawnMode(mod.SpawnModes.Spectating);
+    }
+
+    updateScoreboard(victim);
+
+        
+        
         
         // CHECK FOR LAST PLAYER STANDING
         const winner = checkForLastPlayerStanding();
@@ -347,13 +373,13 @@ export async function OnPlayerDied(
 
         // double-check player is still valid before deploy
         if (mod.IsPlayerValid(victim)) {
-            mod.DisplayNotificationMessage(mod.Message("{0} life remaining!", playerLives[victimId]), victim);
+            mod.DisplayNotificationMessage(mod.Message("{0} lives remaining!", playerLives[victimId]), victim);
             // allow deploy and redeploy
             mod.EnablePlayerDeploy(victim, true);
             mod.SetRedeployTime(victim, RESPAWN_DELAY);
             mod.DeployPlayer(victim);
-        } else {
-            console.log(`[OITC] Victim ${victimId} no longer valid at deploy time`);
+        } else if (playerLives[victimId] === 1) {
+         mod.DisplayNotificationMessage(mod.Message("LAST CHANCE!"), victim);
         }
 
         // ensure scoreboard updated after deploy attempt
@@ -406,6 +432,7 @@ function handlePlayerVictory(player: mod.Player): void {
         mod.Message("{0} is the winner!", player)
     );
     mod.EndGameMode(player);
+    resetPlayerTeams();
 }
 
 // ============================================================================
