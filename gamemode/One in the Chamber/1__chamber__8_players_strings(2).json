@@ -1,1 +1,15 @@
-{"0":"modlib","1":"Container","2":"Text","3":"Lives: {0}","4":"ONE IN THE CHAMBER","5":"Kills","6":"Lives","7":"One in The Chamber.","8":"Kill {0} / {1}","9":"You are eliminated.","10":"{0} life remaining!","11":"{0} is the winner!"}
+{
+  "0": "modlib",
+  "1": "Container",
+  "2": "Text",
+  "3": "Lives: {0}",
+  "4": "ONE IN THE CHAMBER",
+  "5": "Kills",
+  "6": "Lives",
+  "7": "Kill {0} / {1}",
+  "8": "You are eliminated.",
+  "9": "{0} lives remaining!",
+  "10": "LAST CHANCE!",
+  "11": "{0} is the winner!",
+  "12": "You've got 3 lives, use them well!"
+}
