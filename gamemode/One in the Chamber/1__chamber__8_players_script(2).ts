@@ -5,7 +5,8 @@ const RESPAWN_DELAY = 3;
 const TARGET_KILLS = 20;
 const INITIAL_THROWABLES = 3; // Renamed BRUV for clarity
 const INITIAL_LIVES = 3;
-
+const DEFAULT_TEAM = mod.GetTeam(1);
+const SPECTATOR_TEAM = 2; // used dynamically, not hardcoded for one person
 
 function assignPlayersToUniqueTeams() {
     // Assign every valid player to a unique team by iterating the engine player array correctly.
@@ -333,7 +334,8 @@ export async function OnPlayerDied(
         ui.update(playerLives[victimId]);
     }
 
-    if ((playerLives[victimId] ?? INITIAL_LIVES) <= 0) {
+    const currentLives = playerLives[victimId] ?? INITIAL_LIVES;
+    if (currentLives <= 0) {
         // Hide UI when eliminated
         if (ui) {
             ui.hide();
@@ -341,19 +343,14 @@ export async function OnPlayerDied(
         mod.DisplayNotificationMessage(mod.Message("You are eliminated."), victim);
         mod.EnablePlayerDeploy(victim, false);
          mod.SetRedeployTime(victim, 999999);
-        updateScoreboard(victim);
         
- if (mod.IsPlayerValid(victim)) {
-        // Move to killer's team to enable auto-spectate
-        if (mod.IsPlayerValid(killer)) {
-            const killerTeam = mod.GetTeam(killer);
-            mod.SetTeam(victim, killerTeam);}
+        updateScoreboard(victim);
+    if (mod.IsPlayerValid(killer)) { const killerTeam = mod.GetTeam(killer); mod.SetTeam(victim, killerTeam);
+   mod.SetSpawnMode(mod.SpawnModes.Spectating); } // Switch to spectator mode (no respawn) 
+    }   
+// Move to killer's team to enable auto-spectate 
 
-        // Switch to spectator mode (no respawn)
-        mod.SetSpawnMode(mod.SpawnModes.Spectating);
-    }
-
-    updateScoreboard(victim);
+   
 
         
         
@@ -362,9 +359,10 @@ export async function OnPlayerDied(
         const winner = checkForLastPlayerStanding();
         if (winner !== null) {
             handlePlayerVictory(winner);
+            return;
         }
-        return;
-    }
+       
+    
 
     // If still has lives, wait briefly then redeploy
     if (playerLives[victimId] > 0) {
@@ -375,9 +373,7 @@ export async function OnPlayerDied(
         if (mod.IsPlayerValid(victim)) {
             mod.DisplayNotificationMessage(mod.Message("{0} lives remaining!", playerLives[victimId]), victim);
             // allow deploy and redeploy
-            mod.EnablePlayerDeploy(victim, true);
-            mod.SetRedeployTime(victim, RESPAWN_DELAY);
-            mod.DeployPlayer(victim);
+
         } else if (playerLives[victimId] === 1) {
          mod.DisplayNotificationMessage(mod.Message("LAST CHANCE!"), victim);
         }
