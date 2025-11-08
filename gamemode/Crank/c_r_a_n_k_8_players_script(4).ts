@@ -362,6 +362,7 @@ function resetCrankedStateById(playerId: number) {
     s.timeRemaining = 0;
     s.timerToken++;
     if (s.ui) s.ui.hide();
+    
 }
 
 // --- Game mode events ---
@@ -401,6 +402,7 @@ export async function OnPlayerDeployed(player: mod.Player) {
     clearPlayerLoadout(player);
     generateRandomWeaponPackages(player);
     updateScoreboard(player);
+    mod.EnableScreenEffect(player, mod.ScreenEffects.Saturated, false);
 }
 
 export async function OnPlayerDied(victim: mod.Player) {
@@ -408,6 +410,7 @@ export async function OnPlayerDied(victim: mod.Player) {
     const victimId = mod.GetObjId(victim);
     resetCrankedStateById(victimId);
     updateScoreboard(victim);
+
 }
 
 // --- Kill handling & streak bonuses ---
@@ -497,12 +500,12 @@ export async function OnPlayerEarnedKill(killer: mod.Player, victim: mod.Player)
                 }
                 break;
         }
-        const totalKills = getPLayerKills(player);
-        if (totalKills >= 50) {
-        PlayWinEffect(player);    
-        handlePlayerVictory(player);
-        }
-
+const totalKills = mod.GetPlayerKills(killer);
+if (totalKills >= 50) {
+    PlayWinEffect(killer, true);
+    handlePlayerVictory(killer);
+    return;
+}
         updateScoreboard(victim);
     }
 }
